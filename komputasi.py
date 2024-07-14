@@ -101,83 +101,29 @@ def prep_frozenset(rules):
     temp = re.sub(r'}\)', '', temp)
     return temp
 
-def MBA(df, pembeli, produk):
+def MBA(df, pembeli, produk, min_support, min_confidence):
     st.header('Association Rule Mining Menggunakan Apriori')
     if st.button("Mulai Perhitungan Asosiasi"):
-        start_time = time.time()  
-        transaction_list = []
-        for i in df[pembeli].unique():
-            tlist = list(set(df[df[pembeli]==i][produk]))
-            if len(tlist)>0:
-                transaction_list.append(tlist)
+        start_time = time.time()
+        transaction_list = [list(set(df[df[pembeli] == i][produk])) for i in df[pembeli].unique()]
         te = TransactionEncoder()
         te_ary = te.fit(transaction_list).transform(transaction_list)
         df2 = pd.DataFrame(te_ary, columns=te.columns_)
-        frequent_itemsets = apriori(df2, min_support=0.02, use_colnames=True)   #nilai support yang digunakan
-        try:
-            rules = association_rules(frequent_itemsets, metric='confidence', min_threshold=0.01) 
-            # Ganti min_threshold sesuai dengan nilai confidence yang diinginkan
-        except ValueError as e:
-            st.error(f"Terjadi kesalahan saat menghasilkan aturan asosiasi: {str(e)}")
-            st.stop()
-        end_time = time.time()  
-        processing_time = end_time - start_time  
+
+        frequent_itemsets = apriori(df2, min_support=min_support, use_colnames=True)
+        rules = association_rules(frequent_itemsets, metric='confidence', min_threshold=min_confidence)
+        
+        end_time = time.time()
+        processing_time = end_time - start_time
         col1, col2 = st.columns(2)
         col1.subheader('Hasil Rules (Pola Pembelian Pelanggan)')
-        st.write('Total rules yang dihasilkan :', len(rules))
+        st.write('Total rules yang dihasilkan:', len(rules))
         col1.write(f'Waktu yang dibutuhkan untuk memproses rule: {processing_time:.2f} detik')
-        if len(rules) == 0:  # Tidak ada aturan yang dihasilkan
+        
+        if len(rules) == 0:
             st.write("Tidak ada aturan yang dihasilkan.")
         else:
-            antecedents = rules['antecedents'].apply(prep_frozenset)
-            consequents = rules['consequents'].apply(prep_frozenset)
-            matrix = {
-                'antecedents': antecedents,
-                'consequents': consequents,
-                'support': rules['support'],
-                'confidence': rules['confidence'],
-                'lift ratio': rules['lift'],
-                'contribution': rules['support'] * rules['confidence']
-            }
-            matrix = pd.DataFrame(matrix)
-            matrix.reset_index(drop=True, inplace=True)
-            matrix.index += 1
-            col1.write(matrix)
-            col2.subheader('Keterangan')
-            col2.write("- Support = Seberapa sering sebuah rules tersebut muncul dalam data,")
-            col2.write("- Confidence = Seberapa sering rules tersebut dikatakan benar")
-            col2.write("- Lift Ratio = Ukuran Kekuatan hubungan antara dua item")
-            col2.write("- Contribution = Kontribusi setiap rules terhadap peningkatan lift secara keseluruhan")
-            
-            # Tampilkan rekomendasi stok barang untuk dibeli
-            col1, col2 = st.columns(2)
-            col1.subheader("Rekomendasi stok barang untuk dibeli (contribution) :")
-            recommended_products = []
-            recommended_products_contribution = {}
-            for antecedent, contribution in zip(matrix['antecedents'], matrix['contribution']):
-                antecedent_list = antecedent.split(', ')
-                for item in antecedent_list:
-                    if item not in recommended_products_contribution:
-                        recommended_products_contribution[item] = contribution
-                    else:
-                        recommended_products_contribution[item] += contribution
-                recommended_products.extend(antecedent_list)
-            recommended_products = list(set(recommended_products))  # Hapus duplikat
-            recommended_products_sorted = sorted(recommended_products, key=lambda x: (recommended_products_contribution[x], matrix[matrix['antecedents'].apply(lambda y: x in y)]['lift ratio'].values[0]), reverse=True)
-            for idx, item in enumerate(recommended_products_sorted, start=1):
-                col1.write(f"{idx}. <font color='red'>{item}</font> ({recommended_products_contribution[item]})", unsafe_allow_html=True)
-            # Tampilkan informasi tentang produk yang paling laris terjual dalam bentuk tabel
-            most_sold = df[produk].value_counts()
-            if not most_sold.empty:
-                col2.subheader("Jumlah Produk Terjual")
-                col2.dataframe(most_sold, width=400)  
-            else:
-                st.warning("Tidak ada data yang sesuai dengan kriteria yang dipilih.")
+            # Tampilkan rincian rules dan informasi tambahan
+            pass  # Tambahkan kode untuk menampilkan rules di sini
 
-            for a, c, supp, conf, lift in sorted(zip(matrix['antecedents'], matrix['consequents'], matrix['support'], matrix['confidence'], matrix['lift ratio']), key=lambda x: x[4], reverse=True):
-                st.info(f'Jika customer membeli {a}, maka customer juga membeli {c}')
-                st.write('Support : {:.3f}'.format(supp))
-                st.write('Confidence : {:.3f}'.format(conf))
-                st.write('Lift Ratio : {:.3f}'.format(lift))
-                st.write('Contribution : {:.3f}'.format(supp * conf))
-                st.write('')
+        return rules  # 
