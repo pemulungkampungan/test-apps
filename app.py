@@ -60,11 +60,11 @@ def show_page(page):
         min_confidence = st.number_input('Masukkan Minimum Confidence:', min_value=0.0, max_value=1.0, value=0.5, step=0.01)
         
         # File uploader
-        dataset_file = st.file_uploader("Pilih file CSV", type=['csv'], key='file_uploader')
+        st.session_state.dataset_file = st.file_uploader("Pilih file CSV", type=['csv'])
 
         if st.button("Analisis Data"):
-            if dataset_file is not None:
-                st.session_state.dataset_file = dataset_file
+            # Pastikan dataset sudah diunggah
+            if 'dataset_file' in st.session_state and st.session_state.dataset_file is not None:
                 try:
                     df = pd.read_csv(st.session_state.dataset_file)
                     if df.empty:
