@@ -59,6 +59,31 @@ def show_page(page):
     if page == "Home":
         st.write("Selamat datang di Aplikasi Analisis Toko Tanaman Hias dengan Metode Apriori.")
 
+        # Input untuk minimum support dan confidence
+        min_support = st.number_input('Masukkan Minimum Support:', min_value=0.0, max_value=1.0, value=0.1, step=0.01)
+        min_confidence = st.number_input('Masukkan Minimum Confidence:', min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+
+        if st.button("Analisis Data"):
+            # Pastikan dataset sudah diunggah
+            if dataset_file is not None:
+                try:
+                    # Membaca dataset
+                    df = pd.read_csv(dataset_file)
+
+                    # Memeriksa dataset kosong
+                    if df.empty:
+                        st.warning("Dataset kosong. Mohon unggah dataset yang valid.")
+                    else:
+                        # Memproses data
+                        pembeli, tanggal, produk = df.columns[0], df.columns[1], df.columns[2]
+                        df = data_summary(df, pembeli, tanggal, produk)
+
+                        # Analisis menggunakan Apriori dengan input dinamis
+                        MBA(df, pembeli, produk, min_support, min_confidence)
+
+                except Exception as e:
+                    st.error(f"Terjadi kesalahan saat memproses dataset: {str(e)}")
+
 # Mendapatkan halaman yang dipilih
 page = st.session_state.get("page", "Home")
 
