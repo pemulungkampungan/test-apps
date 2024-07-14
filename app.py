@@ -60,11 +60,11 @@ def show_page(page):
         min_confidence = st.number_input('Masukkan Minimum Confidence:', min_value=0.0, max_value=1.0, value=0.5, step=0.01)
         
         # File uploader
-        st.session_state.dataset_file = st.file_uploader("Pilih file CSV", type=['csv'])
-        
+        dataset_file = st.file_uploader("Pilih file CSV", type=['csv'], key='file_uploader')
+
         if st.button("Analisis Data"):
-            # Pastikan dataset sudah diunggah
-            if st.session_state.dataset_file is not None:
+            if dataset_file is not None:
+                st.session_state.dataset_file = dataset_file
                 try:
                     df = pd.read_csv(st.session_state.dataset_file)
                     if df.empty:
@@ -75,6 +75,8 @@ def show_page(page):
                         MBA(df, pembeli, produk, min_support, min_confidence)
                 except Exception as e:
                     st.error(f"Terjadi kesalahan saat memproses dataset: {str(e)}")
+            else:
+                st.warning("Silakan unggah file sebelum menganalisis.")
 
 # Mendapatkan halaman yang dipilih
 page = st.session_state.get("page", "Home")
